@@ -9,6 +9,10 @@ import (
 	"github.com/rendau/graylog_notify/internal/cns"
 )
 
+const (
+	maxMsgFieldValueSize = 500
+)
+
 type TGram struct {
 	initChatId int64
 
@@ -32,6 +36,15 @@ func NewTGram(botToken string, initChatId int64) (*TGram, error) {
 }
 
 func (o *TGram) Send(msg map[string]any) error {
+	for k, v := range msg {
+		switch val := v.(type) {
+		case string:
+			if len([]rune(val)) > maxMsgFieldValueSize {
+				msg[k] = string(([]rune(val))[:maxMsgFieldValueSize]) + "..."
+			}
+		}
+	}
+
 	var tag string
 	if v, ok := msg[cns.TagFieldName]; ok {
 		tag = v.(string)
