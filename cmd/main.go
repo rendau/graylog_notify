@@ -119,7 +119,7 @@ func (a *App) Init() {
 }
 
 func (a *App) Start() {
-	slog.Info("start")
+	slog.Info("Start")
 
 	// http server
 	{
