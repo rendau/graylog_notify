@@ -75,6 +75,7 @@ func (o *TGram) Send(msg map[string]any) error {
 	if ts != "" {
 		ts = strings.ReplaceAll(ts, "-", "\\-")
 		ts = strings.ReplaceAll(ts, "+", "\\+")
+		ts = strings.ReplaceAll(ts, ".", "\\.")
 	}
 
 	msgContent := " `" + tag + "` \\(" + level + "\\):  " + ts + "\n\n```\n"
@@ -118,7 +119,15 @@ func (o *TGram) Send(msg map[string]any) error {
 
 	msgContent += "```"
 
-	fmt.Println("Msg", msgContent)
+	/*
+		`delivery_test` \(ERROR\):  2024\-05\-19T20:02:39.410142695\+05:00
+
+		```
+		MSG: 		test error
+		ERROR: 		test error
+		```
+	*/
+	//fmt.Println("Msg", msgContent)
 
 	tgMsg := tgbotapi.NewMessage(o.initChatId, msgContent)
 	tgMsg.ParseMode = tgbotapi.ModeMarkdownV2
