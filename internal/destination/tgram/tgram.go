@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
 	"github.com/rendau/graylog_notify/internal/cns"
 )
 
@@ -116,6 +117,8 @@ func (o *TGram) Send(msg map[string]any) error {
 	}
 
 	msgContent += "```"
+
+	fmt.Println("Msg", msgContent)
 
 	tgMsg := tgbotapi.NewMessage(o.initChatId, msgContent)
 	tgMsg.ParseMode = tgbotapi.ModeMarkdownV2
