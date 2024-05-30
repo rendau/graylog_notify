@@ -78,7 +78,7 @@ func (o *TGram) Send(msg map[string]any) error {
 		ts = strings.ReplaceAll(ts, ".", "\\.")
 	}
 
-	msgContent := " `" + tag + "` \\(" + level + "\\):  " + ts + "\n\n```\n"
+	msgContent := " `" + tag + "` \\(" + level + "\\):  " + ts + "\n\n```go\n"
 
 	var mes string
 	if v, ok := msg["msg"]; ok && v != nil {
