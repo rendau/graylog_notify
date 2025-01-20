@@ -1,27 +1,9 @@
-# Go specific
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+*.log
 *.tar
 *.tar.gz
 *.tar.bz2
-go.work
-go.work.sum
+.idea
+.env
 release/*
 build/
-/_obj/
-/_test/
-/vendor/
-/Godeps/
-/.glide/
-/.idea/
-/.vscode/
-
-# OS specific
-.DS_Store
-Thumbs.db
-
-conf.yml
 /svc

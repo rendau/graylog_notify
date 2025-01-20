@@ -1,13 +1,19 @@
-package httphandler
+package graylog
 
 import (
 	"encoding/json"
-	"io"
-	"log/slog"
-	"net/http"
-
-	"github.com/rendau/graylog_notify/internal/core"
 )
+
+type Message struct {
+	Event struct {
+		Fields MessageFields `json:"fields"`
+	} `json:"event"`
+}
+
+type MessageFields struct {
+	Tag     string          `json:"tag"`
+	Message json.RawMessage `json:"message"`
+}
 
 /*
 {
@@ -151,44 +157,3 @@ import (
   "backlog": []
 }
 */
-
-type msgSt struct {
-	Event struct {
-		Fields map[string]string `json:"fields"`
-	} `json:"event"`
-}
-
-func (h *handlerSt) Send(w http.ResponseWriter, r *http.Request) {
-	// read body
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		slog.Error("fail to read body", slog.String("error", err.Error()))
-		return
-	}
-
-	msg := msgSt{}
-	err = json.Unmarshal(body, &msg)
-	if err != nil {
-		slog.Error(
-			"fail to unmarshal body",
-			slog.String("error", err.Error()),
-			slog.String("body", string(body)),
-		)
-		return
-	}
-	if msg.Event.Fields == nil {
-		return
-	}
-
-	tag := msg.Event.Fields["tag"]
-	message := msg.Event.Fields["message"]
-
-	if message == "" {
-		return
-	}
-
-	h.cr.Send(core.SendRequestSt{
-		Tag:     tag,
-		Message: message,
-	})
-}
