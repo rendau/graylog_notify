@@ -1,9 +1,5 @@
 package graylog
 
-import (
-	"encoding/json"
-)
-
 type Message struct {
 	Event struct {
 		Fields MessageFields `json:"fields"`
@@ -11,8 +7,8 @@ type Message struct {
 }
 
 type MessageFields struct {
-	Tag     string          `json:"tag"`
-	Message json.RawMessage `json:"message"`
+	Tag     string `json:"tag"`
+	Message string `json:"message"`
 }
 
 /*

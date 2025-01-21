@@ -29,7 +29,7 @@ func (s *Source) ParseMessage(data []byte) (*core.Message, error) {
 	messageMap := map[string]any{}
 
 	// parse fields.message object
-	err = json.Unmarshal(message.Event.Fields.Message, &messageMap)
+	err = json.Unmarshal([]byte(message.Event.Fields.Message), &messageMap)
 	if err != nil {
 		return nil, fmt.Errorf("json.Unmarshal Fields.Message: %w", err)
 	}
