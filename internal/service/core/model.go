@@ -80,10 +80,11 @@ func (m *Message) popFieldStr(keyVariants ...string) string {
 	for _, key := range keyVariants {
 		key = m.formatKey(key)
 		if v, ok := m.V[key]; ok {
-			result = v.(string)
-			delete(m.V, key)
-			if result != "" {
-				return result
+			if result, ok = v.(string); ok {
+				delete(m.V, key)
+				if result != "" {
+					return result
+				}
 			}
 		}
 	}
