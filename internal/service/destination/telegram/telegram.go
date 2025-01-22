@@ -3,6 +3,7 @@ package telegram
 import (
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -17,12 +18,12 @@ const (
 
 type Destination struct {
 	botApi          *tgbotapi.BotAPI
-	rules           map[string]*Rule
-	defaultRule     *Rule
+	rules           map[string][]int64
+	defaultRule     []int64
 	markdownEscaper *strings.Replacer
 }
 
-func New(botToken string, rules map[string]*Rule) (*Destination, error) {
+func New(botToken string, inputRules []Rule) (*Destination, error) {
 	botApi, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		return nil, fmt.Errorf("tgbotapi.NewBotAPI: %w", err)
@@ -32,11 +33,14 @@ func New(botToken string, rules map[string]*Rule) (*Destination, error) {
 		botApi: botApi,
 	}
 
-	res.applyRules(rules)
+	res.applyRules(inputRules)
 
 	res.initMarkdownEscaper()
 
-	slog.Info("Telegram started with rules", "rules", res.rules, "default_rule", res.defaultRule)
+	slog.Info("Telegram default-rule", "chat_ids", res.defaultRule)
+	for tag, chatIds := range res.rules {
+		slog.Info("Telegram rule "+tag, "chat_ids", chatIds)
+	}
 
 	go res.reader()
 
@@ -44,8 +48,8 @@ func New(botToken string, rules map[string]*Rule) (*Destination, error) {
 }
 
 func (s *Destination) Send(msg *core.Message) error {
-	rule := s.findRuleByTag(msg.Tag)
-	if rule == nil {
+	chatIds := s.getChatIdsForTag(msg.Tag)
+	if chatIds == nil {
 		slog.Info(
 			"Tg-message, no rule found for tag "+msg.Tag,
 			"tag", msg.Tag,
@@ -60,12 +64,14 @@ func (s *Destination) Send(msg *core.Message) error {
 
 	encodedMsg := s.EncodeMessage(msg)
 
-	tgMsg := tgbotapi.NewMessage(rule.ChatId, encodedMsg)
-	tgMsg.ParseMode = tgbotapi.ModeMarkdownV2
+	for _, chatId := range chatIds {
+		tgMsg := tgbotapi.NewMessage(chatId, encodedMsg)
+		tgMsg.ParseMode = tgbotapi.ModeMarkdownV2
 
-	_, err := s.botApi.Send(tgMsg)
-	if err != nil {
-		return fmt.Errorf("botApi.Send: %w", err)
+		_, err := s.botApi.Send(tgMsg)
+		if err != nil {
+			return fmt.Errorf("botApi.Send: %w", err)
+		}
 	}
 
 	return nil
@@ -122,38 +128,53 @@ func (s *Destination) escapeMarkdown(v string) string {
 	return s.markdownEscaper.Replace(v)
 }
 
-func (s *Destination) applyRules(src map[string]*Rule) {
-	s.rules = make(map[string]*Rule, len(src))
+func (s *Destination) applyRules(src []Rule) {
+	s.rules = make(map[string][]int64, len(src))
 
-	for k, v := range src {
-		if v == nil || v.ChatId == 0 {
+	for _, ruleInput := range src {
+		if len(ruleInput.Tags) == 0 {
 			continue
 		}
-		k = strings.ToLower(strings.TrimSpace(k))
-		if k == "" {
+		if len(ruleInput.ChatIds) == 0 {
 			continue
 		}
-		if k == defaultRuleKey {
-			s.defaultRule = v
-		} else {
-			s.rules[k] = v
+		for _, tag := range ruleInput.Tags {
+			tag = strings.ToLower(strings.TrimSpace(tag))
+			if tag == "" {
+				continue
+			}
+			if tag == defaultRuleKey {
+				s.defaultRule = ruleInput.ChatIds
+			} else {
+				for _, chatId := range ruleInput.ChatIds {
+					if chatId == 0 {
+						continue
+					}
+
+					if !slices.Contains(s.rules[tag], chatId) {
+						s.rules[tag] = append(s.rules[tag], chatId)
+					}
+				}
+			}
 		}
 	}
 }
 
-func (s *Destination) findRuleByTag(tag string) *Rule {
-	if rule, ok := s.rules[tag]; ok {
-		return rule
+func (s *Destination) getChatIdsForTag(tag string) []int64 {
+	if chatIds, ok := s.rules[tag]; ok {
+		return chatIds
 	}
 
 	return s.defaultRule
 }
 
 func (s *Destination) reader() {
+	time.Sleep(time.Minute)
+
 	for {
 		s._reader()
 
-		time.Sleep(time.Second * 30)
+		time.Sleep(time.Minute)
 	}
 }
 

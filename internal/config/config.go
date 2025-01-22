@@ -9,17 +9,17 @@ import (
 )
 
 var Conf = struct {
-	Debug            bool                    `env:"DEBUG" envDefault:"false"`
-	HttpPort         string                  `env:"HTTP_PORT" envDefault:"80"`
-	HttpCors         bool                    `env:"HTTP_CORS" envDefault:"false"`
-	TelegramToken    string                  `env:"TELEGRAM_TOKEN"`
-	TelegramRulesRaw string                  `env:"TELEGRAM_RULES"`
-	TelegramRules    map[string]TelegramRule `env:"-"` // key is tag, * is default tag
+	Debug            bool           `env:"DEBUG" envDefault:"false"`
+	HttpPort         string         `env:"HTTP_PORT" envDefault:"80"`
+	HttpCors         bool           `env:"HTTP_CORS" envDefault:"false"`
+	TelegramToken    string         `env:"TELEGRAM_TOKEN"`
+	TelegramRulesRaw string         `env:"TELEGRAM_RULES"`
+	TelegramRules    []TelegramRule `env:"-"` // key is tag, * is default tag
 }{}
 
 type TelegramRule struct {
-	Name   string `yaml:"name"`
-	ChatId int64  `yaml:"chat_id"`
+	Tags    []string `yaml:"tags"`
+	ChatIds []int64  `yaml:"chat_ids"`
 }
 
 func init() {
@@ -27,7 +27,7 @@ func init() {
 		panic(err)
 	}
 
-	Conf.TelegramRules = make(map[string]TelegramRule)
+	Conf.TelegramRules = make([]TelegramRule, 0)
 	if len(Conf.TelegramRulesRaw) > 0 {
 		err := yaml.Unmarshal([]byte(Conf.TelegramRulesRaw), &Conf.TelegramRules)
 		if err != nil {

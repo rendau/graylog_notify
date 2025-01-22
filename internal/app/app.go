@@ -41,12 +41,12 @@ func (a *App) Init() {
 
 	serviceSourceGraylog := serviceSourceGraylogP.New()
 
-	telegramRules := map[string]*serviceDestinationTelegramP.Rule{}
-	for k, v := range config.Conf.TelegramRules {
-		telegramRules[k] = &serviceDestinationTelegramP.Rule{
-			Name:   v.Name,
-			ChatId: v.ChatId,
-		}
+	telegramRules := make([]serviceDestinationTelegramP.Rule, 0, len(config.Conf.TelegramRules))
+	for _, confRule := range config.Conf.TelegramRules {
+		telegramRules = append(telegramRules, serviceDestinationTelegramP.Rule{
+			Tags:    confRule.Tags,
+			ChatIds: confRule.ChatIds,
+		})
 	}
 	serviceDestinationTelegram, err := serviceDestinationTelegramP.New(
 		config.Conf.TelegramToken,

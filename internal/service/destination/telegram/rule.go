@@ -5,10 +5,10 @@ import (
 )
 
 type Rule struct {
-	Name   string
-	ChatId int64
+	Tags    []string
+	ChatIds []int64
 }
 
-func (o *Rule) String() string {
-	return fmt.Sprintf("{name: %s, chat_id: %d}", o.Name, o.ChatId)
+func (r *Rule) String() string {
+	return fmt.Sprintf("{tags: %v, chat_ids: %v}", r.Tags, r.ChatIds)
 }
