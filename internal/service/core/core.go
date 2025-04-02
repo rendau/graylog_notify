@@ -23,6 +23,7 @@ func New(
 func (s *Service) Send(data []byte) {
 	msg, err := s.source.ParseMessage(data)
 	if err != nil {
+		slog.Error("fail to parse source message", slog.String("error", err.Error()), slog.Any("data", string(data)))
 		err = s.destination.Send(&Message{
 			Level:   "error",
 			Ts:      time.Now().Format(time.RFC3339),
