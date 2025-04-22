@@ -45,7 +45,7 @@ func NewMessage(tag string, src map[string]any) *Message {
 
 func (m *Message) normalize() {
 	m.Tag = m.popFieldStr("tag")
-	m.Level = m.popFieldStr("level", "lvl")
+	m.Level = m.popFieldStr("app_level", "level", "lvl")
 	m.Ts = m.popFieldStr("ts", "time", "timestamp")
 	m.Message = m.popFieldStr("msg", "message")
 	m.Error = m.popFieldStr("error", "err")
