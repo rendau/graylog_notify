@@ -132,10 +132,8 @@ func (s *Destination) applyRules(src []Rule) {
 	s.rules = make(map[string][]int64, len(src))
 
 	for _, ruleInput := range src {
-		if len(ruleInput.Tags) == 0 {
-			continue
-		}
-		if len(ruleInput.ChatIds) == 0 {
+		chatIds := s.normalizeChatIds(ruleInput.ChatIds)
+		if len(chatIds) == 0 {
 			continue
 		}
 		for _, tag := range ruleInput.Tags {
@@ -144,20 +142,28 @@ func (s *Destination) applyRules(src []Rule) {
 				continue
 			}
 			if tag == defaultRuleKey {
-				s.defaultRule = ruleInput.ChatIds
+				s.defaultRule = chatIds
 			} else {
-				for _, chatId := range ruleInput.ChatIds {
-					if chatId == 0 {
-						continue
-					}
-
-					if !slices.Contains(s.rules[tag], chatId) {
-						s.rules[tag] = append(s.rules[tag], chatId)
-					}
-				}
+				s.rules[tag] = chatIds
 			}
 		}
 	}
+}
+
+func (s *Destination) normalizeChatIds(v []int64) []int64 {
+	result := make([]int64, 0, len(v))
+
+	for _, chatId := range v {
+		if chatId == 0 {
+			continue
+		}
+
+		if !slices.Contains(result, chatId) {
+			result = append(result, chatId)
+		}
+	}
+
+	return result
 }
 
 func (s *Destination) getChatIdsForTag(tag string) []int64 {
