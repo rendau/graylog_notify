@@ -49,6 +49,7 @@ func (a *App) Init() {
 		})
 	}
 	serviceDestinationTelegram, err := serviceDestinationTelegramP.New(
+		config.Conf.TelegramApiUrl,
 		config.Conf.TelegramToken,
 		telegramRules,
 	)

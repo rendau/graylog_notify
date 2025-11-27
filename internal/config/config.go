@@ -12,6 +12,7 @@ var Conf = struct {
 	Debug            bool           `env:"DEBUG" envDefault:"false"`
 	HttpPort         string         `env:"HTTP_PORT" envDefault:"80"`
 	HttpCors         bool           `env:"HTTP_CORS" envDefault:"false"`
+	TelegramApiUrl   string         `env:"TELEGRAM_API_URL"`
 	TelegramToken    string         `env:"TELEGRAM_TOKEN"`
 	TelegramRulesRaw string         `env:"TELEGRAM_RULES"`
 	TelegramRules    []TelegramRule `env:"-"` // key is tag, * is default tag

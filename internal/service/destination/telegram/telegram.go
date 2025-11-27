@@ -23,10 +23,22 @@ type Destination struct {
 	markdownEscaper *strings.Replacer
 }
 
-func New(botToken string, inputRules []Rule) (*Destination, error) {
-	botApi, err := tgbotapi.NewBotAPI(botToken)
-	if err != nil {
-		return nil, fmt.Errorf("tgbotapi.NewBotAPI: %w", err)
+func New(apiUrl string, botToken string, inputRules []Rule) (*Destination, error) {
+	var err error
+
+	var botApi *tgbotapi.BotAPI
+
+	if apiUrl != "" {
+		apiUrl = strings.TrimRight(apiUrl, "/") + "/bot%s/%s"
+		botApi, err = tgbotapi.NewBotAPIWithAPIEndpoint(botToken, apiUrl)
+		if err != nil {
+			return nil, fmt.Errorf("tgbotapi.NewBotAPI: %w", err)
+		}
+	} else {
+		botApi, err = tgbotapi.NewBotAPI(botToken)
+		if err != nil {
+			return nil, fmt.Errorf("tgbotapi.NewBotAPI: %w", err)
+		}
 	}
 
 	res := &Destination{
