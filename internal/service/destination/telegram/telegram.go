@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
@@ -14,6 +15,13 @@ import (
 
 const (
 	defaultRuleKey = "default"
+
+	// Telegram принимает до 4096 символов текста. Длину считаем по уже экранированной
+	// строке: в ней символов не меньше, чем увидит Telegram, так что запас гарантирован.
+	maxMessageLen = 4000
+	// поля message и error бывают со стектрейсом на десятки килобайт
+	maxMainFieldLen = 1500
+	truncatedSuffix = "..."
 )
 
 type Destination struct {
@@ -99,40 +107,69 @@ func (s *Destination) EncodeMessage(m *core.Message) string {
 		s.escapeMarkdown(m.Ts),
 	))
 	if m.Message != "" {
-		sb.WriteString(fmt.Sprintf("*•MESSAGE:* `%s`\n", s.escapeMarkdown(m.Message)))
+		sb.WriteString(fmt.Sprintf("*•MESSAGE:* `%s`\n", s.escapeMarkdown(truncate(m.Message, maxMainFieldLen))))
 	}
 	if m.Error != "" {
-		sb.WriteString(fmt.Sprintf("*•ERROR:* `%s`\n", s.escapeMarkdown(m.Error)))
+		sb.WriteString(fmt.Sprintf("*•ERROR:* `%s`\n", s.escapeMarkdown(truncate(m.Error, maxMainFieldLen))))
 	}
 
-	// Обрабатываем остальные поля
+	// Обрабатываем остальные поля. Строки добавляем целиком, пока помещаются в лимит
+	// Telegram: обрезать готовую разметку посередине нельзя — разорвётся `...`.
 	if len(m.V) > 0 {
 		sb.WriteString(strings.Repeat("\\-", 30) + "\n")
 		sortedKeys := m.GetVSortedKeys()
 
+		omitted := 0
 		for _, k := range sortedKeys {
-			sb.WriteString(fmt.Sprintf("*•%s:* `%v`\n", s.escapeMarkdown(k), s.escapeMarkdown(fmt.Sprintf("%v", m.V[k]))))
+			line := fmt.Sprintf("*•%s:* `%s`\n", s.escapeMarkdown(k), s.escapeMarkdown(fmt.Sprintf("%v", m.V[k])))
+			if omitted > 0 || utf8.RuneCountInString(sb.String())+utf8.RuneCountInString(line) > maxMessageLen-100 {
+				omitted++
+				continue
+			}
+			sb.WriteString(line)
+		}
+		if omitted > 0 {
+			sb.WriteString(s.escapeMarkdown(fmt.Sprintf("... ещё полей не поместилось: %d", omitted)) + "\n")
 		}
 	}
 
 	return sb.String()
 }
 
+// truncate обрезает строку до maxLen символов (рун), не разрывая многобайтные символы.
+func truncate(v string, maxLen int) string {
+	if utf8.RuneCountInString(v) <= maxLen {
+		return v
+	}
+
+	return string([]rune(v)[:maxLen]) + truncatedSuffix
+}
+
+// initMarkdownEscaper — все символы, которые MarkdownV2 требует экранировать
+// (https://core.telegram.org/bots/api#markdownv2-style). Экранированный символ Telegram
+// считает обычным и внутри `кода`, поэтому один и тот же экранировщик годится везде.
+// Replacer проходит строку один раз: вставленные им `\` повторно не экранируются.
 func (s *Destination) initMarkdownEscaper() {
 	s.markdownEscaper = strings.NewReplacer(
+		`\`, `\\`,
 		`_`, `\_`,
-		`-`, `\-`,
-		`+`, `\+`,
-		`.`, `\.`,
 		`*`, `\*`,
 		`[`, `\[`,
 		`]`, `\]`,
 		`(`, `\(`,
 		`)`, `\)`,
 		`~`, `\~`,
+		"`", "\\`",
 		`>`, `\>`,
 		`#`, `\#`,
+		`+`, `\+`,
+		`-`, `\-`,
+		`=`, `\=`,
 		`|`, `\|`,
+		`{`, `\{`,
+		`}`, `\}`,
+		`.`, `\.`,
+		`!`, `\!`,
 	)
 }
 
